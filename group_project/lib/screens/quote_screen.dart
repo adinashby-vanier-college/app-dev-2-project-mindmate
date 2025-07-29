@@ -20,14 +20,6 @@ class _QuoteScreenState extends State<QuoteScreen> {
   void initState() {
     super.initState();
     fetchQuote();
-
-    // Auto navigate to Home after 5 seconds
-    Timer(const Duration(seconds: 5), () {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
-      );
-    });
   }
 
   Future<void> fetchQuote() async {
@@ -55,6 +47,9 @@ class _QuoteScreenState extends State<QuoteScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text("Quote of the Day"),
+      ),
       backgroundColor: Color(0xFFE8E8E8),
       body: SafeArea(
         child: Padding(
@@ -115,6 +110,10 @@ class _QuoteScreenState extends State<QuoteScreen> {
                   ScaffoldMessenger.of(
                     context,
                   ).showSnackBar(SnackBar(content: Text('Mood logged!')));
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => const HomeScreen()),
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.purple[300],
