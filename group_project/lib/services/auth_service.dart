@@ -27,45 +27,77 @@ class AuthService {
     }
   }
 
-  // Sign in with email and password - IGNORE THE TYPE ERROR
+  // Sign in with email and password - PROPERLY FIXED
   Future<User?> signIn(String email, String password) async {
     try {
+      // First, make sure we're signed out to avoid confusion
+      await _auth.signOut();
+
       UserCredential result = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
       return result.user;
+    } on FirebaseAuthException catch (e) {
+      // Handle specific Firebase auth errors properly
+      print('Firebase auth error: ${e.code} - ${e.message}');
+
+      switch (e.code) {
+        case 'user-not-found':
+          throw 'No user found with this email';
+        case 'wrong-password':
+          throw 'Incorrect password';
+        case 'invalid-email':
+          throw 'Invalid email address';
+        case 'user-disabled':
+          throw 'This user account has been disabled';
+        case 'invalid-credential':
+          throw 'Invalid email or password';
+        case 'too-many-requests':
+          throw 'Too many login attempts. Please try again later';
+        default:
+          throw e.message ?? 'Login failed';
+      }
     } catch (e) {
-      print('Caught error: $e');
+      // Handle the type casting error specifically
+      if (e.toString().contains('PigeonUserDetails')) {
+        print('Type casting error detected, checking auth state...');
 
-      // Even if there's a type casting error, check if login actually worked
-      await Future.delayed(Duration(milliseconds: 1000));
+        // Wait a moment for auth state to settle
+        await Future.delayed(Duration(milliseconds: 1000));
 
-      if (_auth.currentUser != null && _auth.currentUser!.email == email) {
-        print('Login actually succeeded despite the error!');
-        return _auth.currentUser;
+        // CRITICAL: Only return user if they match the email being used to login
+        final currentUser = _auth.currentUser;
+        if (currentUser != null && currentUser.email?.toLowerCase() == email.toLowerCase()) {
+          print('Login succeeded despite type casting error');
+          return currentUser;
+        } else {
+          // If no user or wrong user, the login actually failed
+          await _auth.signOut(); // Make sure we're signed out
+          throw 'Login failed - invalid credentials';
+        }
       }
 
-      // If it's a real authentication error, throw it
-      if (e is FirebaseAuthException) {
-        throw e.message ?? 'Sign in failed';
-      }
-
-      // For the type casting error, just return current user if it exists
-      throw 'Login failed - please try again';
+      // For any other errors, make sure we're signed out and throw
+      await _auth.signOut();
+      throw e.toString();
     }
   }
 
-  // Google Sign In (we'll disable this for now)
+  // Google Sign In (disabled for now)
   Future<User?> signInWithGoogle() async {
     throw 'Google Sign In temporarily disabled';
   }
 
   // Sign out
   Future<void> signOut() async {
-    await Future.wait([
-      _auth.signOut(),
-      _googleSignIn.signOut(),
-    ]);
+    try {
+      await Future.wait([
+        _auth.signOut(),
+        _googleSignIn.signOut(),
+      ]);
+    } catch (e) {
+      print('Sign out error: $e');
+    }
   }
 }
