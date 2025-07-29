@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'home_screen.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class QuoteScreen extends StatefulWidget {
   const QuoteScreen({super.key});
@@ -10,9 +12,14 @@ class QuoteScreen extends StatefulWidget {
 }
 
 class _QuoteScreenState extends State<QuoteScreen> {
+  String quote = '';
+  String author = '';
+  bool isLoading = true;
+
   @override
   void initState() {
     super.initState();
+    fetchQuote();
 
     // Auto navigate to Home after 5 seconds
     Timer(const Duration(seconds: 5), () {
@@ -21,6 +28,28 @@ class _QuoteScreenState extends State<QuoteScreen> {
         MaterialPageRoute(builder: (context) => const HomeScreen()),
       );
     });
+  }
+
+  Future<void> fetchQuote() async {
+    try {
+      final response = await http.get(
+        Uri.parse('https://zenquotes.io/api/random'),
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          quote = data[0]['q'];
+          author = data[0]['a'];
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        quote = 'Could not load quote.';
+        author = '';
+        isLoading = false;
+      });
+    }
   }
 
   @override
@@ -33,15 +62,25 @@ class _QuoteScreenState extends State<QuoteScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                '"Quote Of The Day!"',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-                textAlign: TextAlign.center,
-              ),
+              isLoading
+                  ? CircularProgressIndicator()
+                  : Column(
+                    children: [
+                      Text(
+                        '"$quote"',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontStyle: FontStyle.italic,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        '- $author',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
 
               SizedBox(height: 60),
 
