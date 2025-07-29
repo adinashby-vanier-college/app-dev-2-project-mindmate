@@ -1,6 +1,28 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
+import 'home_screen.dart';
 
-class QuoteScreen extends StatelessWidget {
+class QuoteScreen extends StatefulWidget {
+  const QuoteScreen({super.key});
+
+  @override
+  State<QuoteScreen> createState() => _QuoteScreenState();
+}
+
+class _QuoteScreenState extends State<QuoteScreen> {
+  @override
+  void initState() {
+    super.initState();
+
+    // Auto navigate to Home after 5 seconds
+    Timer(const Duration(seconds: 5), () {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -25,10 +47,7 @@ class QuoteScreen extends StatelessWidget {
 
               Text(
                 'How are you feeling today?',
-                style: TextStyle(
-                  fontSize: 18,
-                  color: Colors.black87,
-                ),
+                style: TextStyle(fontSize: 18, color: Colors.black87),
               ),
 
               SizedBox(height: 40),
@@ -54,9 +73,9 @@ class QuoteScreen extends StatelessWidget {
               // Submit Button
               ElevatedButton(
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Mood logged!')),
-                  );
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('Mood logged!')));
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.purple[300],
