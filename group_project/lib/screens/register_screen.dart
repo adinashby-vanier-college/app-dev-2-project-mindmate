@@ -19,74 +19,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   bool _isLoading = false;
 
-  Future<void> _register() async {
-    if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isLoading = true);
-
-    try {
-      print("🚀 Starting registration process...");
-
-      // Create Firebase user
-      print("📧 Creating Firebase Auth user...");
-      final user = await _auth.signUp(
-        _emailController.text.trim(),
-        _passwordController.text,
-        _usernameController.text.trim(),
-      );
-
-      print("✅ Firebase Auth user created: ${user?.uid}");
-
-      if (user != null) {
-        print("💾 Creating user profile in Firestore...");
-
-        // Create user profile in Firestore
-        await _db.createUserProfile(
-          user.uid,
-          _usernameController.text.trim(),
-          _emailController.text.trim(),
-        );
-
-        print("✅ Firestore profile created successfully");
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Registration successful! Welcome ${_usernameController.text}!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-
-        print("🎯 Navigating to quote screen...");
-        Navigator.pushReplacementNamed(context, '/quote');
-      }
-    } catch (e) {
-      print("❌ Registration error caught: $e");
-      print("❌ Error type: ${e.runtimeType}");
-
-      // Check if user was actually created despite the error
-      if (_auth.currentUser != null) {
-        print("🤔 User exists despite error - this confirms the race condition theory!");
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Registration completed successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-
-        Navigator.pushReplacementNamed(context, '/quote');
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString()),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-
-    setState(() => _isLoading = false);
-  }
 
   @override
   Widget build(BuildContext context) {
