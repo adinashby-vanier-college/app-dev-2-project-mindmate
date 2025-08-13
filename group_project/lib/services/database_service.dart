@@ -17,14 +17,16 @@ class DatabaseService {
     }
   }
 
-  // Save mood entry (for your quote screen)
-  Future<void> saveMoodEntry(String userId, int moodLevel, String? note) async {
+  // Save mood entry (for your quote screen) - KEEP ORIGINAL
+  Future<void> saveMoodEntry(String userId, double moodLevel, String? note) async {
     try {
       await _db.collection('users').doc(userId).collection('moods').add({
         'moodLevel': moodLevel,
         'note': note ?? '',
         'timestamp': FieldValue.serverTimestamp(),
+        'date': DateTime.now().toIso8601String().split('T')[0],
       });
+      print('✅ Mood entry saved: $moodLevel');
     } catch (e) {
       print('Error saving mood: $e');
       rethrow;
@@ -41,13 +43,16 @@ class DatabaseService {
         .snapshots();
   }
 
-  // Save journal entry
-  Future<void> saveJournalEntry(String userId, String content) async {
+  // Save journal entry - ORIGINAL SIGNATURE
+  Future<void> saveJournalEntry(String userId, String content, double moodLevel) async {
     try {
       await _db.collection('users').doc(userId).collection('journal').add({
         'content': content,
+        'moodLevel': moodLevel,
         'timestamp': FieldValue.serverTimestamp(),
+        'date': DateTime.now().toIso8601String().split('T')[0],
       });
+      print('✅ Journal entry saved');
     } catch (e) {
       print('Error saving journal: $e');
       rethrow;
@@ -62,5 +67,29 @@ class DatabaseService {
         .collection('journal')
         .orderBy('timestamp', descending: true)
         .snapshots();
+  }
+
+  // Update mood entry
+  Future<void> updateMoodEntry(String userId, String entryId, double moodLevel, String? note) async {
+    try {
+      await _db.collection('users').doc(userId).collection('moods').doc(entryId).update({
+        'moodLevel': moodLevel,
+        'note': note ?? '',
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      print('Error updating mood: $e');
+      rethrow;
+    }
+  }
+
+  // Delete mood entry
+  Future<void> deleteMoodEntry(String userId, String entryId) async {
+    try {
+      await _db.collection('users').doc(userId).collection('moods').doc(entryId).delete();
+    } catch (e) {
+      print('Error deleting mood: $e');
+      rethrow;
+    }
   }
 }

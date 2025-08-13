@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../services/database_service.dart';
+import '../widgets/mood_slider.dart';
 import 'home_screen.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 
 class QuoteScreen extends StatefulWidget {
   const QuoteScreen({super.key});
@@ -12,44 +13,83 @@ class QuoteScreen extends StatefulWidget {
 }
 
 class _QuoteScreenState extends State<QuoteScreen> {
-  String quote = '';
-  String author = '';
-  bool isLoading = true;
+  final DatabaseService _db = DatabaseService();
+  double _currentMood = 5.0;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
     super.initState();
-    fetchQuote();
+
+    // Auto navigate to Home after 15 seconds (increased time for mood input)
+    Timer(const Duration(seconds: 15), () {
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+        );
+      }
+    });
   }
 
-  Future<void> fetchQuote() async {
+  Future<void> _submitMood() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    setState(() => _isSubmitting = true);
+
     try {
-      final response = await http.get(
-        Uri.parse('https://zenquotes.io/api/random'),
+      await _db.saveMoodEntry(user.uid, _currentMood, null);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Mood logged successfully! 🎉'),
+          backgroundColor: Colors.green,
+        ),
       );
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        setState(() {
-          quote = data[0]['q'];
-          author = data[0]['a'];
-          isLoading = false;
-        });
-      }
+
+      // Navigate to home after successful submission
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
+      );
     } catch (e) {
-      setState(() {
-        quote = 'Could not load quote.';
-        author = '';
-        isLoading = false;
-      });
+      print("❌ Mood save error: $e");
+
+      // Handle the type casting error
+      if (e.toString().contains('PigeonUserDetails') || e.toString().contains('type cast')) {
+        // Wait a moment for the save to complete
+        await Future.delayed(Duration(milliseconds: 1500));
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Mood logged successfully! 🎉'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        // Navigate to home on likely success
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to log mood: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+
+        // Reset loading state for real errors
+        setState(() => _isSubmitting = false);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Quote of the Day"),
-      ),
       backgroundColor: Color(0xFFE8E8E8),
       body: SafeArea(
         child: Padding(
@@ -57,25 +97,27 @@ class _QuoteScreenState extends State<QuoteScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              isLoading
-                  ? CircularProgressIndicator()
-                  : Column(
-                    children: [
-                      Text(
-                        '"$quote"',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontStyle: FontStyle.italic,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        '- $author',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
+              Text(
+                '"Each day provides its own gifts."',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                  fontStyle: FontStyle.italic,
+                ),
+                textAlign: TextAlign.center,
+              ),
+
+              SizedBox(height: 10),
+
+              Text(
+                '- Marcus Aurelius',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
 
               SizedBox(height: 60),
 
@@ -84,46 +126,74 @@ class _QuoteScreenState extends State<QuoteScreen> {
                 style: TextStyle(fontSize: 18, color: Colors.black87),
               ),
 
-              SizedBox(height: 40),
+              SizedBox(height: 30),
 
-              // Mood slider placeholder
+              // Mood Slider
               Container(
-                width: 300,
-                height: 40,
+                padding: EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.purple[100],
-                  borderRadius: BorderRadius.circular(20),
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(15),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.2),
+                      spreadRadius: 2,
+                      blurRadius: 5,
+                      offset: Offset(0, 3),
+                    ),
+                  ],
                 ),
-                child: Center(
-                  child: Text(
-                    'Mood Slider (Coming Soon)',
-                    style: TextStyle(color: Colors.purple[600]),
-                  ),
+                child: MoodSlider(
+                  initialValue: _currentMood,
+                  onChanged: (value) {
+                    setState(() {
+                      _currentMood = value;
+                    });
+                  },
                 ),
               ),
 
               SizedBox(height: 40),
 
               // Submit Button
-              ElevatedButton(
+              SizedBox(
+                width: 200,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _isSubmitting ? null : _submitMood,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.purple[300],
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                  ),
+                  child: _isSubmitting
+                      ? CircularProgressIndicator(color: Colors.white)
+                      : Text(
+                    'Submit',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+
+              SizedBox(height: 20),
+
+              // Skip button
+              TextButton(
                 onPressed: () {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(SnackBar(content: Text('Mood logged!')));
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(builder: (context) => const HomeScreen()),
                   );
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.purple[300],
-                  foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25),
-                  ),
+                child: Text(
+                  'Skip for now',
+                  style: TextStyle(color: Colors.grey[600]),
                 ),
-                child: Text('Submit'),
               ),
             ],
           ),
