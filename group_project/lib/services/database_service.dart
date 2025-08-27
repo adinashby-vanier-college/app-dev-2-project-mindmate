@@ -92,4 +92,28 @@ class DatabaseService {
       rethrow;
     }
   }
+
+  // Get user profile
+  Future<Map<String, dynamic>?> getUserProfile(String userId) async {
+    try {
+      final doc = await _db.collection('users').doc(userId).get();
+      return doc.exists ? doc.data() : null;
+    } catch (e) {
+      print('Error getting profile: $e');
+      rethrow;
+    }
+  }
+
+// Update user profile
+  Future<void> updateUserProfile(String userId, Map<String, dynamic> data) async {
+    try {
+      await _db.collection('users').doc(userId).update({
+        ...data,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      print('Error updating profile: $e');
+      rethrow;
+    }
+  }
 }

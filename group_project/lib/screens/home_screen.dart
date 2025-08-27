@@ -4,14 +4,13 @@ import 'quote_screen.dart';
 import 'journal_screen.dart';
 import 'affirmations_screen.dart';
 import 'breathing_screen.dart';
+import 'profile_screen.dart';
 
 class HomeScreen extends StatelessWidget {
-  // Remove const from here since we're using non-const AuthService
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Move AuthService inside build method
     final AuthService auth = AuthService();
 
     return Scaffold(
@@ -20,7 +19,6 @@ class HomeScreen extends StatelessWidget {
         backgroundColor: Colors.purple[300],
         foregroundColor: Colors.white,
         actions: [
-          // Profile button
           PopupMenuButton(
             icon: Icon(Icons.account_circle),
             itemBuilder: (context) => [
@@ -30,7 +28,10 @@ class HomeScreen extends StatelessWidget {
                   title: Text('Profile'),
                   onTap: () {
                     Navigator.pop(context);
-                    // TODO: Navigate to profile
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => ProfileScreen()),
+                    );
                   },
                 ),
               ),
@@ -41,7 +42,6 @@ class HomeScreen extends StatelessWidget {
                   onTap: () async {
                     Navigator.pop(context);
                     await auth.signOut();
-                    // AuthWrapper will automatically handle navigation
                   },
                 ),
               ),
