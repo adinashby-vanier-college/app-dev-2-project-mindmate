@@ -5,6 +5,8 @@ import 'screens/register_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/quote_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/affirmations_screen.dart';
+import 'screens/breathing_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

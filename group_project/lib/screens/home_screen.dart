@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'quote_screen.dart';
 import 'journal_screen.dart';
+import 'affirmations_screen.dart';
+import 'breathing_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   // Remove const from here since we're using non-const AuthService
@@ -54,8 +56,8 @@ class HomeScreen extends StatelessWidget {
         mainAxisSpacing: 10,
         children: [
           _buildTile(context, 'Quote of the Day', Icons.format_quote, QuoteScreen()),
-          _buildTile(context, 'Affirmations', Icons.self_improvement, Placeholder()),
-          _buildTile(context, 'Breathe', Icons.air, Placeholder()),
+          _buildTile(context, 'Affirmations', Icons.self_improvement, const AffirmationsScreen()),
+          _buildTile(context, 'Breathe', Icons.air, const BreathingScreen()),
           _buildTile(context, 'My Journal', Icons.book, JournalScreen()),
         ],
       ),
